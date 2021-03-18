@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors')
+const axios = require('axios')
 
 const app = express()
 
@@ -8,13 +9,7 @@ app.use(cors())
 
 const posts = {}
 
-app.get('/posts', (_, res) => {
-	res.send(posts)
-})
-
-app.post('/events', (req, res) => {
-	const { type, data } = req.body
-
+const handleEvent = (type, data) => {
 	switch (type) {
 		case 'PostCreated': {
 			const { id, title } = data
@@ -42,11 +37,24 @@ app.post('/events', (req, res) => {
 		default:
 			break
 	}
+}
 
-	console.log(posts)
+app.get('/posts', (_, res) => {
+	res.send(posts)
+})
+
+app.post('/events', (req, res) => {
+	handleEvent(req.body.type, req.body.data)
 	res.send({})
 })
 
-app.listen(4002, () => {
+app.listen(4002, async () => {
 	console.log('Listening on 4002')
+
+	const res = await axios.get('http://localhost:4005/events')
+
+	for (let event of res.data) {
+		console.log('Processing event:', event.type)
+		handleEvent(event.type, event.data)
+	}
 })
